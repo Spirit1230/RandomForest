@@ -7,7 +7,7 @@ namespace MachineLearning
 {
     class DecisionTree 
     {
-        private Node RootNode;
+        private Nodes RootNode;
         private DataSet dataSet;
 
         public DecisionTree(string dataSouce) 
@@ -39,46 +39,63 @@ namespace MachineLearning
 
     class Node : Nodes 
     {
-        private Node leftNode;
-        private Node rightNode;
+        private Nodes leftNode;
+        private Nodes rightNode;
         private int checkCol;
-        private string condition;
-        private float nodeImpurity;
+        private string[] condition;
 
         public Node(DataSet nodeDataSet) 
         {
-            nodeImpurity = CalculateImpurity(nodeDataSet);
+            float nodeImpurity = CalculateImpurity(nodeDataSet);
 
-            Dictionary<int, float> colImpurities = new Dictionary<int, float>();
+            (int col, string[] split, float impurity) = FindBestSplit(nodeDataSet);
 
-            for (int col = 0; col < nodeDataSet.GetNumCol() - 1; col++) 
+            checkCol = col;
+            condition = split;
+
+            if (nodeDataSet.GetNumCol() > 1) 
             {
-                Dictionary<string, DataSet> splitDataSets = SeperateData(col, nodeDataSet);
-                float weightedImpurity = 0;
-
-                foreach (KeyValuePair<string, DataSet> x in splitDataSets) 
+                if (impurity < nodeImpurity) 
                 {
-                    float splitDataImpurity = CalculateImpurity(x.Value);
+                    (DataSet _leftNode, DataSet _rightNode) = SeperateData(checkCol, nodeDataSet, condition);
 
-                    Console.WriteLine(x.Key);
-                    x.Value.PrintDataSet();
-                    Console.WriteLine("Impurity = " + splitDataImpurity.ToString());
-                    Console.WriteLine();
+                    if (CalculateImpurity(_leftNode) != 0) 
+                    {
+                        leftNode = new Node(_leftNode);
+                    }
+                    else 
+                    {
+                        string decision = _leftNode.MostCommonColValue(_leftNode.GetNumCol() - 1);
+                        leftNode = new Leaf(decision);
+                    }
 
-                    weightedImpurity += ((float)x.Value.GetNumEntries() / (float)nodeDataSet.GetNumEntries()) * splitDataImpurity;
+                    if (CalculateImpurity(_rightNode) != 0) 
+                    {
+                        rightNode = new Node(_rightNode);
+                    }
+                    else 
+                    {
+                        string decision = _rightNode.MostCommonColValue(_rightNode.GetNumCol() - 1);
+                        rightNode = new Leaf(decision);
+                    }
                 }
+                else 
+                {
+                    string decision = nodeDataSet.MostCommonColValue(nodeDataSet.GetNumCol() - 1);
 
-                Console.WriteLine(@"Impurity for {0} = {1}", nodeDataSet.GetHeaders()[col], weightedImpurity);
-                Console.WriteLine();
+                    leftNode = new Leaf(decision);
+                    rightNode = new Leaf(decision);
+                }  
+            }
+            else 
+            {
+                string decision = nodeDataSet.MostCommonColValue(nodeDataSet.GetNumCol() - 1);
 
-                colImpurities.Add(col, weightedImpurity);                
+                leftNode = new Leaf(decision);
+                rightNode = new Leaf(decision);
             }
 
-            checkCol = FindBestSplit(colImpurities);
-            Console.WriteLine(@"Best split using {0}", nodeDataSet.GetHeaders()[checkCol]);
-
-            Console.WriteLine();
-            Test();
+                      
         }
 
         public void Test() 
@@ -97,22 +114,22 @@ namespace MachineLearning
             {
                 if (Convert.ToInt64(input[checkCol]) <= Convert.ToInt64(condition)) 
                 {
-                    return leftNode.GetDecision(new string[] {"1"});
+                    return leftNode.GetDecision(input);
                 }
                 else 
                 {
-                    return rightNode.GetDecision(new string[] {"1"});
+                    return rightNode.GetDecision(input);
                 }
             }
             catch 
             {
-                if (input[checkCol] == condition) 
+                if (condition.Contains(input[checkCol])) 
                 {
-                    return leftNode.GetDecision(new string[] {"1"});
+                    return leftNode.GetDecision(input);
                 }
                 else 
                 {
-                    return rightNode.GetDecision(new string[] {"1"});
+                    return rightNode.GetDecision(input);
                 }
             }
         }
@@ -212,43 +229,6 @@ namespace MachineLearning
             return result;
         }
 
-        private Dictionary<string, DataSet> SeperateData(int col, DataSet dataSet) 
-        {
-            Console.WriteLine(dataSet.GetHeaders()[col]);
-
-            //finds each entry corresponding to each possible column value
-            //so if column can be TRUE or FALSE, finds all entries where column is TRUE and all entries where column is FALSE
-            Dictionary<string, int[]> splitData = new Dictionary<string, int[]>();
-
-            string[] values = dataSet.GetColValues(col);
-
-            foreach (string value in values) 
-            {
-                splitData.Add(value, dataSet.SelectEntries(col, value));
-            }
-
-            //splits the data set into new data sets corresponding to each possible value
-            //so if column can be TRUE or FALSE, creates new data sets for entries where column is TRUE and removes all FALSE entries and likewise for FALSE
-            Dictionary<string, DataSet> splitDataSets = new Dictionary<string, DataSet>();
-
-            foreach (KeyValuePair<string, int[]> data in splitData) 
-            {
-                List<int> toRemove = new List<int>();
-
-                for (int toRemoveIndex = 0; toRemoveIndex < dataSet.GetNumEntries(); toRemoveIndex++) 
-                {
-                    if (!data.Value.Contains(toRemoveIndex)) 
-                    {
-                        toRemove.Add(toRemoveIndex);
-                    }
-                }
-
-                splitDataSets.Add(data.Key, new DataSet(dataSet.CloneData(new int[] {col}, toRemove.ToArray())));
-            }
-
-            return splitDataSets;
-        }
-
         private (DataSet, DataSet) SeperateData(int col, DataSet dataSet, string[] conditionToSeperate) 
         {
             //finds all entries that meet the specified conditions
@@ -272,42 +252,41 @@ namespace MachineLearning
             return (trueData, falseData);
         }
 
-        private int FindBestSplit(Dictionary<int, float> splitData) 
+        private (int, string[], float) FindBestSplit(DataSet dataSet) 
         {
-            //finds the best column to split the data
+            float bestImpurity = 1;
+            int bestCol = 0;
+            string[] bestSplit = new string[0];
 
-            float bestSplit = 1; //this is the highest possible impurity
-            int toSplit = 0;
-
-            foreach (KeyValuePair<int, float> toCheck in splitData) 
+            for (int col = 0; col < dataSet.GetNumCol() - 1; col++) 
             {
-                if (toCheck.Value <= bestSplit) 
+                foreach (string[] comb in FindAllCombinations(dataSet.GetColValues(col))) 
                 {
-                    toSplit = toCheck.Key;
-                    bestSplit = toCheck.Value;
-                }
+                    (DataSet leftNode, DataSet rightNode) = SeperateData(col, dataSet, comb);
+
+                    float weightedImpurity = 
+                        ((float)leftNode.GetNumEntries() / (float)dataSet.GetNumEntries()) * CalculateImpurity(leftNode)
+                        + ((float)rightNode.GetNumEntries() / (float)dataSet.GetNumEntries()) * CalculateImpurity(rightNode)
+                    ;
+
+                    Console.WriteLine(@"Splitting using {0} == {1}", dataSet.GetHeaders()[col], string.Join(" OR ", comb));
+                    Console.WriteLine(@"Impurity is : {0}", weightedImpurity);
+                    Console.WriteLine();
+
+                    if (weightedImpurity < bestImpurity) 
+                    {
+                        bestImpurity = weightedImpurity;
+                        bestCol = col;
+                        bestSplit = comb;
+                    }
+                }                
             }
 
-            return toSplit;
-        }
+            Console.WriteLine(@"Best split using {0}", dataSet.GetHeaders()[bestCol]);
+            Console.WriteLine(@"Impurity is : {0}", bestImpurity);
+            Console.WriteLine();
 
-        private string FindBestSplit(Dictionary<string, float> splitData) 
-        {
-            //finds the best column to split the data
-
-            float bestSplit = 1; //this is the highest possible impurity
-            string toSplit = "";
-
-            foreach (KeyValuePair<string, float> toCheck in splitData) 
-            {
-                if (toCheck.Value <= bestSplit) 
-                {
-                    toSplit = toCheck.Key;
-                    bestSplit = toCheck.Value;
-                }
-            }
-
-            return toSplit;
+            return (bestCol, bestSplit, bestImpurity);
         }
 
         private float CalculateImpurity(DataSet toCalc) 

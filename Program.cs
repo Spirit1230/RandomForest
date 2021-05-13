@@ -7,6 +7,14 @@ namespace MachineLearning
         static void Main(string[] args)
         {
             DecisionTree dT = new DecisionTree("IsSunnyTest.csv");
+
+            string[] testEntry1 = new string[] {"TRUE", "FALSE"}; //TRUE
+            string[] testEntry2 = new string[] {"FALSE", "FALSE"}; //FALSE
+            string[] testEntry3 = new string[] {"TRUE", "TRUE"}; //TRUE
+
+            Console.WriteLine(dT.GetDecision(testEntry1));
+            Console.WriteLine(dT.GetDecision(testEntry2));
+            Console.WriteLine(dT.GetDecision(testEntry3));
             
             // DataSet dS = new DataSet("IsSunnyTest.csv");
             // dS.PrintDataSet();

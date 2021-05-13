@@ -211,5 +211,25 @@ namespace MachineLearning
                 Console.WriteLine(toOutput);
             }
         }
+
+        public string MostCommonColValue(int col) 
+        {
+            string mostComVal = "";
+            
+            int highestValNum = 0;
+
+            foreach (string val in GetColValues(col)) 
+            {
+                int valNum = SelectEntries(col, val).Length;
+
+                if (valNum > highestValNum) 
+                {
+                    mostComVal = val;
+                    highestValNum = valNum;
+                }
+            }
+
+            return mostComVal;
+        }
     }
 }
