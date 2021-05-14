@@ -282,7 +282,7 @@ namespace MachineLearning
                 }                
             }
 
-            Console.WriteLine(@"Best split using {0}", dataSet.GetHeaders()[bestCol]);
+            Console.WriteLine(@"Best split using {0} == {1}", dataSet.GetHeaders()[bestCol], string.Join(" OR ", bestSplit));
             Console.WriteLine(@"Impurity is : {0}", bestImpurity);
             Console.WriteLine();
 
