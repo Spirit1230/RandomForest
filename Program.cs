@@ -7,13 +7,18 @@ namespace MachineLearning
     {
         static void Main(string[] args)
         {
-            MultChoiceTest();            
+            //BinaryTest();
+            //MultChoiceTest();
+            RankedTest();
+            //NumTest();
 
             Console.ReadKey();
         }
 
         static void BinaryTest() 
         {
+            Console.WriteLine("Binary Test\n");
+
             DecisionTree dT = new DecisionTree("TestData\\IsSunnyTest.csv");
 
             List<string[]> testEntries = new List<string[]>();
@@ -32,6 +37,8 @@ namespace MachineLearning
 
         static void MultChoiceTest() 
         {
+            Console.WriteLine("Multiple Choice Test\n");
+
             DecisionTree dT = new DecisionTree("TestData\\DessertTest.csv");
 
             List<string[]> testEntries = new List<string[]>();
@@ -56,7 +63,9 @@ namespace MachineLearning
 
         static void RankedTest() 
         {
-            DecisionTree dT = new DecisionTree("TestData\\CorD.csv");
+            Console.WriteLine("Numeric Ranked Data Test\n");
+
+            DecisionTree dT = new DecisionTree("TestData\\CorDTest.csv");
 
             List<string[]> testEntries = new List<string[]>();
 
@@ -80,7 +89,9 @@ namespace MachineLearning
 
         static void NumTest() 
         {
-            DecisionTree dT = new DecisionTree("TestData\\LikesFruit.csv");
+            Console.WriteLine("Numeric Data Test\n");
+
+            DecisionTree dT = new DecisionTree("TestData\\LikesFruitTest.csv");
 
             List<string[]> testEntries = new List<string[]>();
 
@@ -104,10 +115,19 @@ namespace MachineLearning
 
         static void DataSetTest() 
         {
-            DataSet dS = new DataSet("TestData\\IsSunnyTest.csv");
+            Console.WriteLine("Testing DataSet Functionality\n");
+
+            DataSet dS = new DataSet("TestData\\LikesFruitTest.csv");
             dS.PrintDataSet();
 
             Console.WriteLine();
+
+            for (int i = 0; i < dS.GetNumCol(); i++) 
+            {
+                Console.Write("\t\t" + dS.GetColType(i));
+            }
+
+            Console.WriteLine("\n");
 
             int[] selectedEntries = dS.SelectEntries(0, "TRUE");
             Console.WriteLine(selectedEntries.Length);

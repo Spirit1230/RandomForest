@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.IO;
 
 namespace MachineLearning 
 {
@@ -42,6 +41,7 @@ namespace MachineLearning
         private Nodes leftNode;
         private Nodes rightNode;
         private int checkCol;
+        private string type;
         private string[] condition;
 
         public Node(DataSet nodeDataSet) 
@@ -51,7 +51,14 @@ namespace MachineLearning
             (int col, string[] split, float impurity) = FindBestSplit(nodeDataSet);
 
             checkCol = col;
+            type = nodeDataSet.GetColType(col);
             condition = split;
+
+            string toWrite = (type == "double") ? String.Format("{0} <= {1}", nodeDataSet.GetHeaders()[checkCol], string.Join("", condition)) :
+                                                String.Format("{0} == {1}", nodeDataSet.GetHeaders()[checkCol], string.Join(" OR ", condition));
+
+            Console.WriteLine("Node condition " + toWrite + "\n");
+            nodeDataSet.PrintDataSet();
 
             if (nodeDataSet.GetNumCol() > 1) 
             {
@@ -110,9 +117,9 @@ namespace MachineLearning
 
         override public string GetDecision(string[] input) 
         {
-            try 
+            if (type == "double")
             {
-                if (Convert.ToInt64(input[checkCol]) <= Convert.ToInt64(condition)) 
+                if (Convert.ToDouble(input[checkCol]) <= Convert.ToDouble(condition[0])) 
                 {
                     return leftNode.GetDecision(input);
                 }
@@ -121,7 +128,7 @@ namespace MachineLearning
                     return rightNode.GetDecision(input);
                 }
             }
-            catch 
+            else
             {
                 if (condition.Contains(input[checkCol])) 
                 {
@@ -134,7 +141,21 @@ namespace MachineLearning
             }
         }
 
-        private List<string[]> FindAllCombinations(string[] allPosValues) 
+        private double[] FindAllNumericConditions(double[] allValues) 
+        {
+            List<double> allCond = new List<double>();
+
+            Array.Sort(allValues);
+
+            for (int i = 0; i < allValues.Length - 1; i++) 
+            {
+                allCond.Add((allValues[i] + allValues[i + 1]) / 2);
+            }
+
+            return allCond.ToArray();
+        }
+
+        private string[][] FindAllCombinations(string[] allPosValues) 
         {
             List<string[]> posConds = new List<string[]>();
 
@@ -207,7 +228,7 @@ namespace MachineLearning
                 }
             }
 
-            return posConds;
+            return posConds.ToArray();
         }
 
         private int CalculateTotalCombinations(int numChosen, int totalOptions) 
@@ -232,7 +253,16 @@ namespace MachineLearning
         private (DataSet, DataSet) SeperateData(int col, DataSet dataSet, string[] conditionToSeperate) 
         {
             //finds all entries that meet the specified conditions
-            int[] selectedData = dataSet.SelectEntries(col, conditionToSeperate);
+            int[] selectedData;
+
+            if (dataSet.GetColType(col) == "double") 
+            {
+                selectedData = dataSet.SelectEntries(col, Convert.ToDouble(conditionToSeperate[0]));
+            }
+            else 
+            {
+                selectedData = dataSet.SelectEntries(col, conditionToSeperate);
+            }
 
             //finds all entries that don't meet the specified conditions
             List<int> toRemove = new List<int>();
@@ -260,7 +290,33 @@ namespace MachineLearning
 
             for (int col = 0; col < dataSet.GetNumCol() - 1; col++) 
             {
-                foreach (string[] comb in FindAllCombinations(dataSet.GetColValues(col))) 
+                string[][] toCheck;
+                string[] uniqueVals = dataSet.GetColValues(col);
+
+                if (dataSet.GetColType(col) == "double") 
+                {
+                    double[] allNums = new double[uniqueVals.Length];
+
+                    for (int i = 0; i < uniqueVals.Length; i++) 
+                    {
+                        allNums[i] = Convert.ToDouble(uniqueVals[i]);
+                    }
+
+                    double[] allCond = FindAllNumericConditions(allNums);
+
+                    toCheck = new string[allCond.Length][];
+
+                    for (int i = 0; i < toCheck.Length; i++) 
+                    {
+                        toCheck[i] = new string[] { Convert.ToString(allCond[i]) };
+                    }
+                } 
+                else 
+                {
+                    toCheck = FindAllCombinations(uniqueVals);
+                }
+
+                foreach (string[] comb in toCheck) 
                 {
                     (DataSet leftNode, DataSet rightNode) = SeperateData(col, dataSet, comb);
 
@@ -279,7 +335,7 @@ namespace MachineLearning
                         bestCol = col;
                         bestSplit = comb;
                     }
-                }                
+                }             
             }
 
             Console.WriteLine(@"Best split using {0} == {1}", dataSet.GetHeaders()[bestCol], string.Join(" OR ", bestSplit));
