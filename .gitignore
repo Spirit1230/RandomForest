@@ -1,4 +1,4 @@
-\bin
-\obj
-\.vscode
-\PracticeData.xlsx
+/bin
+/obj
+/.vscode
+/PracticeData.xlsx
