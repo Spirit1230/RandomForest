@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace MachineLearning 
 {
-    class RandomForrest 
+    class RandomForest 
     {
-        List<DecisionTree> forrest = new List<DecisionTree>();
+        List<DecisionTree> forest = new List<DecisionTree>();
 
-        RandomForrest(string dataSource)  
+        RandomForest(string dataSource)  
         {
 
         }
