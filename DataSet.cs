@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.IO;
 
 namespace MachineLearning 
@@ -8,6 +9,7 @@ namespace MachineLearning
     class DataSet 
     {
         string[] headers = null;
+        bool[] isColNumeric = null;
         List<string[]> dataSet = new List<string[]>();
 
         public DataSet(string dataSouce) 
@@ -25,12 +27,17 @@ namespace MachineLearning
                     if (headers == null) 
                     {
                         headers = dataInput;
+                        isColNumeric = new bool[dataInput.Length];
                     }
                     else 
                     {
                         dataSet.Add(dataInput);
-                    }
-                    
+                    }                    
+                }
+
+                for (int col = 0; col < this.headers.Length; col++) 
+                {
+                    isColNumeric[col] = IsColNumeric(col);
                 }
             }
             else 
@@ -39,11 +46,12 @@ namespace MachineLearning
             }
         }
 
-        public DataSet((string[] _headers, List<string[]> data) dataSource) 
+        public DataSet((string[] _headers, bool[] _isColNumeric, List<string[]> data) dataSource) 
         {
             //takes a tuple of data and headers and appropriatly assigns them
             //this is the output from the CloneData() function
             headers = dataSource._headers;
+            isColNumeric = dataSource._isColNumeric;
             dataSet = dataSource.data;
         }
 
@@ -79,7 +87,23 @@ namespace MachineLearning
             return values.ToArray();
         }
 
-        public (string[], List<string[]>) CloneData(int[] colToRemove = null, int[] rowToRemove = null) 
+        public string GetColType(int col) 
+        {
+            string colType;
+
+            if (isColNumeric[col]) 
+            {
+                colType = "double";
+            }
+            else 
+            {
+                colType = "string";
+            }
+
+            return colType;
+        }
+
+        public (string[], bool[], List<string[]>) CloneData(int[] colToRemove = null, int[] rowToRemove = null) 
         {
             //clones the data whilst removing any specifed entries and/or columns
 
@@ -95,12 +119,14 @@ namespace MachineLearning
 
             //clones the data sets headers removing any specified headers
             List<string> clonedHeaders = new List<string>();
+            List<bool> clonedColType = new List<bool>();
 
             for (int col = 0; col < this.headers.Length; col++) 
             {
                 if (!colToRemove.Contains(col)) 
                 {
                     clonedHeaders.Add(this.headers[col]);
+                    clonedColType.Add(this.isColNumeric[col]);
                 }
             }
 
@@ -128,7 +154,7 @@ namespace MachineLearning
                 }                
             }
 
-            return (clonedHeaders.ToArray(), clonedData);
+            return (clonedHeaders.ToArray(), clonedColType.ToArray(), clonedData);
         }
 
         public int[] SelectEntries(int checkCol, string entryCheck) 
@@ -230,6 +256,22 @@ namespace MachineLearning
             }
 
             return mostComVal;
+        }
+
+        private bool IsColNumeric(int col) 
+        {
+            bool isNumeric = true;
+
+            foreach (string value in GetColValues(col)) 
+            {
+                if (!Regex.IsMatch(value, @"\d+")) 
+                {
+                    isNumeric = false;
+                    break;
+                }
+            }
+
+            return isNumeric;
         }
     }
 }
