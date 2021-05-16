@@ -12,8 +12,6 @@ namespace MachineLearning
         public DecisionTree(string dataSouce) 
         {
             dataSet = new DataSet(dataSouce);
-            string[] outputDecision = dataSet.GetColValues(dataSet.GetNumCol() - 1);
-
             RootNode = new Node(dataSet);
         }
 
@@ -58,6 +56,7 @@ namespace MachineLearning
                     }
                     else 
                     {
+                        //data split perfectly so only one decision can be made
                         string decision = _leftNode.MostCommonColValue(_leftNode.GetNumCol() - 1);
                         leftNode = new Leaf(decision);
                     }
@@ -68,12 +67,15 @@ namespace MachineLearning
                     }
                     else 
                     {
+                        //data split perfectly so only one decision can be made
                         string decision = _rightNode.MostCommonColValue(_rightNode.GetNumCol() - 1);
                         rightNode = new Leaf(decision);
                     }
                 }
                 else 
                 {
+                    //splitting the data further doesn't result in more accurate decisions
+                    //adds two of the same leaf nodes effectively making the current node a leaf node
                     string decision = nodeDataSet.MostCommonColValue(nodeDataSet.GetNumCol() - 1);
 
                     leftNode = new Leaf(decision);
@@ -82,6 +84,8 @@ namespace MachineLearning
             }
             else 
             {
+                //no more columns to make decisions from
+                //adds two of the same leaf nodes effectively making the current node a leaf node
                 string decision = nodeDataSet.MostCommonColValue(nodeDataSet.GetNumCol() - 1);
 
                 leftNode = new Leaf(decision);
@@ -97,6 +101,7 @@ namespace MachineLearning
             {
                 string toCheck = input[checkCol];
 
+                //removes column used from input to reflect how the decision tree is formed
                 string[] toPass = new string[input.Length - 1];
 
                 int toPassIndex = 0;
@@ -111,6 +116,7 @@ namespace MachineLearning
 
                 if (type == "double")
                 {
+                    //data being looked at is numeric
                     if (Convert.ToDouble(toCheck) <= Convert.ToDouble(condition[0])) 
                     {
                         return leftNode.GetDecision(toPass);
@@ -134,6 +140,7 @@ namespace MachineLearning
             } 
             else 
             {
+                //no data to make a decision from, next nodes must be leaf nodes
                 return leftNode.GetDecision(new string[0]);
             }
             
@@ -141,6 +148,7 @@ namespace MachineLearning
 
         private double[] FindAllNumericConditions(double[] allValues) 
         {
+            //sorts each unique value and finds the midpoints between them
             List<double> allCond = new List<double>();
 
             Array.Sort(allValues);
@@ -155,14 +163,18 @@ namespace MachineLearning
 
         private string[][] FindAllCombinations(string[] allPosValues) 
         {
+            //finds all combinations of unique values 
             List<string[]> posConds = new List<string[]>();
 
+            //finds combinations using 1 value then 2, 3 and so on till it reaches maxNumConds
             int maxNumConds = allPosValues.Length - 1;
             int currentMaxConds = 1;
             
+            //position to take values from allPosValues
             int startPos = 0;
             int posIndex = startPos;
 
+            //records how many possible combinations of a certain length can be found
             int numFound = 0;
             int totalComb = CalculateTotalCombinations(currentMaxConds, allPosValues.Length);
 
@@ -170,6 +182,7 @@ namespace MachineLearning
 
             while (currentMaxConds <= maxNumConds) 
             {
+                //iteratest through all values to find different combinations
                 string nextValue = allPosValues[posIndex++];
 
                 if (posCond.Count < currentMaxConds && !posCond.Contains(nextValue)) 
@@ -178,6 +191,7 @@ namespace MachineLearning
                 }
                 else 
                 {
+                    //removes values till a start position is found in allPosValues that can fill posCond
                     string valToRemove;
                     int posInAllValues;
 
@@ -206,18 +220,21 @@ namespace MachineLearning
 
                 if (posCond.Count == currentMaxConds)
                 {
+                    //found a combination of conditions with the required length
                     posConds.Add(posCond.ToArray());
-                    posCond.RemoveAt(posCond.Count - 1);
+                    posCond.RemoveAt(posCond.Count - 1);    //removes final condition to prepare for next combination
                     numFound++;
                 }
 
                 if (posIndex >= allPosValues.Length) 
                 {
+                    //reached end of allPosValues array so loops back to specified start position
                     posIndex = startPos;
                 }
 
                 if (numFound == totalComb) 
                 {
+                    //all possible conditions of the required lenght have been found so resets to find the next set
                     numFound = 0;
                     totalComb = CalculateTotalCombinations(++currentMaxConds, allPosValues.Length);
                     startPos = 0;
@@ -231,6 +248,7 @@ namespace MachineLearning
 
         private int CalculateTotalCombinations(int numChosen, int totalOptions) 
         {
+            //total combinations without repition = n!/(r!(n-r)!)
             int numComb = CalcFactorial(totalOptions) / (CalcFactorial(numChosen) * CalcFactorial(totalOptions - numChosen));
 
             return numComb;
@@ -238,6 +256,7 @@ namespace MachineLearning
 
         private int CalcFactorial(int n) 
         {
+            //calculates the factorial eg: 5! = 5 * 4 * 3 * 2 * 1
             int result = 1;
 
             for (int i = 1; i <= n; i++) 
@@ -255,6 +274,7 @@ namespace MachineLearning
 
             if (dataSet.GetColType(col) == "double") 
             {
+                //converts to double if dealing with numeric data
                 selectedData = dataSet.SelectEntries(col, Convert.ToDouble(conditionToSeperate[0]));
             }
             else 
@@ -282,7 +302,9 @@ namespace MachineLearning
 
         private (int, string[], float) FindBestSplit(DataSet dataSet) 
         {
-            float bestImpurity = 1;
+            //finds best way to split a data set to find lowest impurity
+
+            float bestImpurity = 1; //highest possible impurity
             int bestCol = 0;
             string[] bestSplit = new string[0];
 
@@ -293,6 +315,7 @@ namespace MachineLearning
 
                 if (dataSet.GetColType(col) == "double") 
                 {
+                    //handles numeric data
                     double[] allNums = new double[uniqueVals.Length];
 
                     for (int i = 0; i < uniqueVals.Length; i++) 
@@ -302,6 +325,7 @@ namespace MachineLearning
 
                     double[] allCond = FindAllNumericConditions(allNums);
 
+                    //all data handled as strings so numeric conditions converted back
                     toCheck = new string[allCond.Length][];
 
                     for (int i = 0; i < toCheck.Length; i++) 
@@ -316,6 +340,7 @@ namespace MachineLearning
 
                 foreach (string[] comb in toCheck) 
                 {
+                    //calculates weighted impurity of split data and records conditions that improve impurity
                     (DataSet leftNode, DataSet rightNode) = SeperateData(col, dataSet, comb);
 
                     float weightedImpurity = 

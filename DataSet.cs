@@ -72,6 +72,7 @@ namespace MachineLearning
 
         public string[] GetColValues(int col) 
         {
+            //returns all unique values in a column            
             List<string> values = new List<string>();
 
             foreach (string[] entry in this.dataSet) 
@@ -89,6 +90,8 @@ namespace MachineLearning
 
         public string GetColType(int col) 
         {
+            //returns whether the column has numeric/double data or strings
+            //ranked data treated as numeric data for simplicity
             string colType;
 
             if (isColNumeric[col]) 
@@ -240,6 +243,7 @@ namespace MachineLearning
 
         public string MostCommonColValue(int col) 
         {
+            //finds the most common value within a column
             string mostComVal = "";
             
             int highestValNum = 0;
@@ -260,6 +264,7 @@ namespace MachineLearning
 
         private bool IsColNumeric(int col) 
         {
+            //determines whether a column is numeric or not
             bool isNumeric = true;
 
             foreach (string value in GetColValues(col)) 
