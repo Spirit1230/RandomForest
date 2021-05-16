@@ -14,20 +14,12 @@ namespace MachineLearning
             dataSet = new DataSet(dataSouce);
             string[] outputDecision = dataSet.GetColValues(dataSet.GetNumCol() - 1);
 
-            dataSet.PrintDataSet();
-            Console.WriteLine();
-
             RootNode = new Node(dataSet);
         }
 
         public string GetDecision(string[] inputData) 
         {
             return RootNode.GetDecision(inputData);
-        }
-
-        private void CreateDecisionTree() 
-        {
-
         }
     }
 
@@ -53,12 +45,6 @@ namespace MachineLearning
             checkCol = col;
             type = nodeDataSet.GetColType(col);
             condition = split;
-
-            string toWrite = (type == "double") ? String.Format("{0} <= {1}", nodeDataSet.GetHeaders()[checkCol], string.Join("", condition)) :
-                                                String.Format("{0} == {1}", nodeDataSet.GetHeaders()[checkCol], string.Join(" OR ", condition));
-
-            Console.WriteLine("Node condition " + toWrite + "\n");
-            nodeDataSet.PrintDataSet();
 
             if (nodeDataSet.GetNumCol() > 1) 
             {
@@ -105,40 +91,52 @@ namespace MachineLearning
                       
         }
 
-        public void Test() 
-        {
-            string[] testVals = new string[] {"APPLES", "PEARS", "ORANGES", "BANNANAS", "GRAPES", "AUBERGINE"};
-
-            foreach (string[] cond in FindAllCombinations(testVals)) 
-            {
-                Console.WriteLine(string.Join(" OR ", cond));
-            }
-        }
-
         override public string GetDecision(string[] input) 
         {
-            if (type == "double")
+            if (input.Length != 0) 
             {
-                if (Convert.ToDouble(input[checkCol]) <= Convert.ToDouble(condition[0])) 
+                string toCheck = input[checkCol];
+
+                string[] toPass = new string[input.Length - 1];
+
+                int toPassIndex = 0;
+
+                for (int col = 0; col < input.Length; col++) 
                 {
-                    return leftNode.GetDecision(input);
+                    if (col != checkCol) 
+                    {
+                        toPass[toPassIndex++] = input[col];
+                    }
                 }
-                else 
+
+                if (type == "double")
                 {
-                    return rightNode.GetDecision(input);
+                    if (Convert.ToDouble(toCheck) <= Convert.ToDouble(condition[0])) 
+                    {
+                        return leftNode.GetDecision(toPass);
+                    }
+                    else 
+                    {
+                        return rightNode.GetDecision(toPass);
+                    }
                 }
-            }
-            else
+                else
+                {
+                    if (condition.Contains(toCheck)) 
+                    {
+                        return leftNode.GetDecision(toPass);
+                    }
+                    else 
+                    {
+                        return rightNode.GetDecision(toPass);
+                    }
+                }
+            } 
+            else 
             {
-                if (condition.Contains(input[checkCol])) 
-                {
-                    return leftNode.GetDecision(input);
-                }
-                else 
-                {
-                    return rightNode.GetDecision(input);
-                }
+                return leftNode.GetDecision(new string[0]);
             }
+            
         }
 
         private double[] FindAllNumericConditions(double[] allValues) 
@@ -325,10 +323,6 @@ namespace MachineLearning
                         + ((float)rightNode.GetNumEntries() / (float)dataSet.GetNumEntries()) * CalculateImpurity(rightNode)
                     ;
 
-                    Console.WriteLine(@"Splitting using {0} == {1}", dataSet.GetHeaders()[col], string.Join(" OR ", comb));
-                    Console.WriteLine(@"Impurity is : {0}", weightedImpurity);
-                    Console.WriteLine();
-
                     if (weightedImpurity < bestImpurity) 
                     {
                         bestImpurity = weightedImpurity;
@@ -337,10 +331,6 @@ namespace MachineLearning
                     }
                 }             
             }
-
-            Console.WriteLine(@"Best split using {0} == {1}", dataSet.GetHeaders()[bestCol], string.Join(" OR ", bestSplit));
-            Console.WriteLine(@"Impurity is : {0}", bestImpurity);
-            Console.WriteLine();
 
             return (bestCol, bestSplit, bestImpurity);
         }

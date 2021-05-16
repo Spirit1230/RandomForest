@@ -7,10 +7,10 @@ namespace MachineLearning
     {
         static void Main(string[] args)
         {
-            //BinaryTest();
-            //MultChoiceTest();
+            BinaryTest();
+            MultChoiceTest();
             RankedTest();
-            //NumTest();
+            NumTest();
 
             Console.ReadKey();
         }
@@ -77,6 +77,9 @@ namespace MachineLearning
             testEntries.Add(new string[] {"4", "2"}); //DESSERT
             testEntries.Add(new string[] {"4", "3"}); //DESSERT
             testEntries.Add(new string[] {"3", "5"}); //CURRY
+            testEntries.Add(new string[] {"1", "2"}); //DESSERT
+            testEntries.Add(new string[] {"2", "4"}); //CURRY
+            testEntries.Add(new string[] {"1", "3"}); //CURRY
             
 
             foreach (string[] entry in testEntries) 
