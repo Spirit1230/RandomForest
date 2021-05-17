@@ -7,12 +7,12 @@ namespace MachineLearning
     {
         static void Main(string[] args)
         {
-            // BinaryTest();
-            // MultChoiceTest();
-            // RankedTest();
-            // NumTest();
+            BinaryTest();
+            MultChoiceTest();
+            RankedTest();
+            NumTest();
 
-            DataSetTest();
+            //DataSetTest();
 
             Console.ReadKey();
         }
