@@ -7,10 +7,12 @@ namespace MachineLearning
     {
         static void Main(string[] args)
         {
-            BinaryTest();
-            MultChoiceTest();
-            RankedTest();
-            NumTest();
+            // BinaryTest();
+            // MultChoiceTest();
+            // RankedTest();
+            // NumTest();
+
+            RandomTest();
 
             //DataSetTest();
 
@@ -116,6 +118,37 @@ namespace MachineLearning
             }
 
             Console.WriteLine();
+        }
+
+        static void RandomTest() 
+        {
+            Console.WriteLine("Random Test\n");
+
+            DataSet dS = new DataSet("TestData\\LikesFruitTest.csv");
+
+            List<string[]> testEntries = new List<string[]>();
+
+            testEntries.Add(new string[] {"YES", "100"});
+            testEntries.Add(new string[] {"YES", "125"});
+            testEntries.Add(new string[] {"NO", "600"});
+            testEntries.Add(new string[] {"NO", "300"});
+            testEntries.Add(new string[] {"YES", "40"});
+            testEntries.Add(new string[] {"NO", "150"});
+            testEntries.Add(new string[] {"NO", "325"});
+            testEntries.Add(new string[] {"YES", "70"});
+            
+            for (int i = 0; i < 10; i++) 
+            {
+                RandomTree rT = new RandomTree(dS.CreateBootstrapedDataSet(), 0);
+
+                foreach (string[] entry in testEntries) 
+                {
+                    Console.WriteLine(@"For entry {0} : decision is {1}", string.Join(", ", entry), rT.GetDecision(entry));
+                }
+
+                Console.WriteLine();
+            }
+            
         }
 
         static void DataSetTest() 
