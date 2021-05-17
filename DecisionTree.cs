@@ -12,7 +12,7 @@ namespace MachineLearning
         public DecisionTree(string dataSouce) 
         {
             dataSet = new DataSet(dataSouce);
-            RootNode = new Node(dataSet);
+            RootNode = new Node(dataSet, new int[0]);
         }
 
         public string GetDecision(string[] inputData) 
@@ -33,9 +33,12 @@ namespace MachineLearning
         private int checkCol;
         private string type;
         private string[] condition;
+        private int[] colsUsed;
 
-        public Node(DataSet nodeDataSet) 
+        public Node(DataSet nodeDataSet, int[] _colsUsed, int[] _colsToIgnore = null) 
         {
+            colsUsed = _colsUsed;
+
             float nodeImpurity = CalculateImpurity(nodeDataSet);
 
             (int col, string[] split, float impurity) = FindBestSplit(nodeDataSet);
@@ -49,10 +52,18 @@ namespace MachineLearning
                 if (impurity < nodeImpurity) 
                 {
                     (DataSet _leftNode, DataSet _rightNode) = SeperateData(checkCol, nodeDataSet, condition);
+                    int[] toPass = new int[colsUsed.Length + 1];
+
+                    for (int i = 0; i < colsUsed.Length; i++) 
+                    {
+                        toPass[i] = colsUsed[i];
+                    }
+
+                    toPass[toPass.Length - 1] = checkCol;
 
                     if (CalculateImpurity(_leftNode) != 0) 
                     {
-                        leftNode = new Node(_leftNode);
+                        leftNode = new Node(_leftNode, toPass);
                     }
                     else 
                     {
@@ -63,7 +74,7 @@ namespace MachineLearning
 
                     if (CalculateImpurity(_rightNode) != 0) 
                     {
-                        rightNode = new Node(_rightNode);
+                        rightNode = new Node(_rightNode, toPass);
                     }
                     else 
                     {
@@ -101,40 +112,27 @@ namespace MachineLearning
             {
                 string toCheck = input[checkCol];
 
-                //removes column used from input to reflect how the decision tree is formed
-                string[] toPass = new string[input.Length - 1];
-
-                int toPassIndex = 0;
-
-                for (int col = 0; col < input.Length; col++) 
-                {
-                    if (col != checkCol) 
-                    {
-                        toPass[toPassIndex++] = input[col];
-                    }
-                }
-
                 if (type == "double")
                 {
                     //data being looked at is numeric
                     if (Convert.ToDouble(toCheck) <= Convert.ToDouble(condition[0])) 
                     {
-                        return leftNode.GetDecision(toPass);
+                        return leftNode.GetDecision(input);
                     }
                     else 
                     {
-                        return rightNode.GetDecision(toPass);
+                        return rightNode.GetDecision(input);
                     }
                 }
                 else
                 {
                     if (condition.Contains(toCheck)) 
                     {
-                        return leftNode.GetDecision(toPass);
+                        return leftNode.GetDecision(input);
                     }
                     else 
                     {
-                        return rightNode.GetDecision(toPass);
+                        return rightNode.GetDecision(input);
                     }
                 }
             } 
@@ -294,8 +292,8 @@ namespace MachineLearning
             }
 
             //creates two data sets corresponding to meeting the specified conditions and not
-            DataSet trueData = new DataSet(dataSet.CloneData(new int[] {col}, toRemove.ToArray()));
-            DataSet falseData = new DataSet(dataSet.CloneData(new int[] {col}, selectedData));
+            DataSet trueData = new DataSet(dataSet.CloneData(rowToRemove : toRemove.ToArray()));
+            DataSet falseData = new DataSet(dataSet.CloneData(rowToRemove : selectedData));
 
             return (trueData, falseData);
         }
@@ -310,51 +308,54 @@ namespace MachineLearning
 
             for (int col = 0; col < dataSet.GetNumCol() - 1; col++) 
             {
-                string[][] toCheck;
-                string[] uniqueVals = dataSet.GetColValues(col);
-
-                if (dataSet.GetColType(col) == "double") 
+                if (!this.colsUsed.Contains(col)) 
                 {
-                    //handles numeric data
-                    double[] allNums = new double[uniqueVals.Length];
+                    string[][] toCheck;
+                    string[] uniqueVals = dataSet.GetColValues(col);
 
-                    for (int i = 0; i < uniqueVals.Length; i++) 
+                    if (dataSet.GetColType(col) == "double") 
                     {
-                        allNums[i] = Convert.ToDouble(uniqueVals[i]);
+                        //handles numeric data
+                        double[] allNums = new double[uniqueVals.Length];
+
+                        for (int i = 0; i < uniqueVals.Length; i++) 
+                        {
+                            allNums[i] = Convert.ToDouble(uniqueVals[i]);
+                        }
+
+                        double[] allCond = FindAllNumericConditions(allNums);
+
+                        //all data handled as strings so numeric conditions converted back
+                        toCheck = new string[allCond.Length][];
+
+                        for (int i = 0; i < toCheck.Length; i++) 
+                        {
+                            toCheck[i] = new string[] { Convert.ToString(allCond[i]) };
+                        }
+                    } 
+                    else 
+                    {
+                        toCheck = FindAllCombinations(uniqueVals);
                     }
 
-                    double[] allCond = FindAllNumericConditions(allNums);
-
-                    //all data handled as strings so numeric conditions converted back
-                    toCheck = new string[allCond.Length][];
-
-                    for (int i = 0; i < toCheck.Length; i++) 
+                    foreach (string[] comb in toCheck) 
                     {
-                        toCheck[i] = new string[] { Convert.ToString(allCond[i]) };
-                    }
-                } 
-                else 
-                {
-                    toCheck = FindAllCombinations(uniqueVals);
-                }
+                        //calculates weighted impurity of split data and records conditions that improve impurity
+                        (DataSet leftNode, DataSet rightNode) = SeperateData(col, dataSet, comb);
 
-                foreach (string[] comb in toCheck) 
-                {
-                    //calculates weighted impurity of split data and records conditions that improve impurity
-                    (DataSet leftNode, DataSet rightNode) = SeperateData(col, dataSet, comb);
+                        float weightedImpurity = 
+                            ((float)leftNode.GetNumEntries() / (float)dataSet.GetNumEntries()) * CalculateImpurity(leftNode)
+                            + ((float)rightNode.GetNumEntries() / (float)dataSet.GetNumEntries()) * CalculateImpurity(rightNode)
+                        ;
 
-                    float weightedImpurity = 
-                        ((float)leftNode.GetNumEntries() / (float)dataSet.GetNumEntries()) * CalculateImpurity(leftNode)
-                        + ((float)rightNode.GetNumEntries() / (float)dataSet.GetNumEntries()) * CalculateImpurity(rightNode)
-                    ;
-
-                    if (weightedImpurity < bestImpurity) 
-                    {
-                        bestImpurity = weightedImpurity;
-                        bestCol = col;
-                        bestSplit = comb;
-                    }
-                }             
+                        if (weightedImpurity < bestImpurity) 
+                        {
+                            bestImpurity = weightedImpurity;
+                            bestCol = col;
+                            bestSplit = comb;
+                        }
+                    } 
+                }                            
             }
 
             return (bestCol, bestSplit, bestImpurity);
