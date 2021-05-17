@@ -10,9 +10,10 @@ namespace MachineLearning
             // BinaryTest();
             // MultChoiceTest();
             // RankedTest();
-            // NumTest();
+            NumTest();
 
-            RandomTest();
+            // RandomTest();
+            RandomForestTest();
 
             //DataSetTest();
 
@@ -148,6 +149,32 @@ namespace MachineLearning
 
                 Console.WriteLine();
             }
+            
+        }
+
+        static void RandomForestTest() 
+        {
+            Console.WriteLine("Random Forest Test\n");
+
+            RandomForest rF = new RandomForest("TestData\\LikesFruitTest.csv", 1);
+
+            List<string[]> testEntries = new List<string[]>();
+
+            testEntries.Add(new string[] {"YES", "100"});
+            testEntries.Add(new string[] {"YES", "125"});
+            testEntries.Add(new string[] {"NO", "600"});
+            testEntries.Add(new string[] {"NO", "300"});
+            testEntries.Add(new string[] {"YES", "40"});
+            testEntries.Add(new string[] {"NO", "150"});
+            testEntries.Add(new string[] {"NO", "325"});
+            testEntries.Add(new string[] {"YES", "70"});
+
+            foreach (string[] entry in testEntries) 
+            {
+                Console.WriteLine(@"For entry {0} : decision is {1}", string.Join(", ", entry), rF.GetDecision(entry));
+            }
+
+            Console.WriteLine();
             
         }
 
