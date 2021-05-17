@@ -7,10 +7,12 @@ namespace MachineLearning
     {
         static void Main(string[] args)
         {
-            BinaryTest();
-            MultChoiceTest();
-            RankedTest();
-            NumTest();
+            // BinaryTest();
+            // MultChoiceTest();
+            // RankedTest();
+            // NumTest();
+
+            DataSetTest();
 
             Console.ReadKey();
         }
@@ -142,6 +144,14 @@ namespace MachineLearning
 
             DataSet dS2 = new DataSet(dS.CloneData(colToRemove, selectedEntries));
             dS2.PrintDataSet();
+
+            Console.WriteLine("\n");
+
+            DataSet bootStrappedDS = dS.CreateBootstrapedDataSet();
+            bootStrappedDS.PrintDataSet();
+
+            Console.WriteLine("\n");
+
         }
     }
 }

@@ -106,6 +106,35 @@ namespace MachineLearning
             return colType;
         }
 
+        public DataSet CreateBootstrapedDataSet() 
+        {
+            //randomly takes entries from the dataset to create a new dataset
+            //entries can be repeated
+            Random rnd = new Random();
+
+            List<string[]> bootStrapedData = new List<string[]>();
+
+            int dataSetSize = this.dataSet.Count;
+
+            for (int entryNum = 0; entryNum < dataSetSize; entryNum++) 
+            {
+                string[] entryToAdd = this.dataSet[rnd.Next(0, dataSetSize)];
+
+                string[] clonedEntry = new string[entryToAdd.Length];
+
+                for (int i = 0; i < entryToAdd.Length; i++) 
+                {
+                    clonedEntry[i] = entryToAdd[i];
+                }
+
+                bootStrapedData.Add(clonedEntry);
+            }
+
+            (string[], bool[], List<string[]>) bootStrapedDataSet = (this.headers, this.isColNumeric, bootStrapedData);
+
+            return new DataSet(bootStrapedDataSet);
+        }
+
         public (string[], bool[], List<string[]>) CloneData(int[] colToRemove = null, int[] rowToRemove = null) 
         {
             //clones the data whilst removing any specifed entries and/or columns
