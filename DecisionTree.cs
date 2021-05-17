@@ -33,11 +33,11 @@ namespace MachineLearning
         private int checkCol;
         private string type;
         private string[] condition;
-        private int[] colsToIgnore;
+        private int[] colsUsed;
 
-        public Node(DataSet nodeDataSet, int[] _colsToIgnore) 
+        public Node(DataSet nodeDataSet, int[] _colsUsed, int[] _colsToIgnore = null) 
         {
-            colsToIgnore = _colsToIgnore;
+            colsUsed = _colsUsed;
 
             float nodeImpurity = CalculateImpurity(nodeDataSet);
 
@@ -52,11 +52,11 @@ namespace MachineLearning
                 if (impurity < nodeImpurity) 
                 {
                     (DataSet _leftNode, DataSet _rightNode) = SeperateData(checkCol, nodeDataSet, condition);
-                    int[] toPass = new int[colsToIgnore.Length + 1];
+                    int[] toPass = new int[colsUsed.Length + 1];
 
-                    for (int i = 0; i < colsToIgnore.Length; i++) 
+                    for (int i = 0; i < colsUsed.Length; i++) 
                     {
-                        toPass[i] = colsToIgnore[i];
+                        toPass[i] = colsUsed[i];
                     }
 
                     toPass[toPass.Length - 1] = checkCol;
@@ -308,7 +308,7 @@ namespace MachineLearning
 
             for (int col = 0; col < dataSet.GetNumCol() - 1; col++) 
             {
-                if (!this.colsToIgnore.Contains(col)) 
+                if (!this.colsUsed.Contains(col)) 
                 {
                     string[][] toCheck;
                     string[] uniqueVals = dataSet.GetColValues(col);
