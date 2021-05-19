@@ -20,6 +20,8 @@ namespace MachineLearning
             //iterates through all total number of random columns to use to find the one that produces the most accurate results
             for (int numCols = 1; numCols < dataSet.GetNumCol() - 1; numCols++) 
             {
+                this.forest.Clear();
+
                 DataSet outOfBagDataSet = new DataSet(dataSet.CloneData());
 
                 for (int i = 0; i < numTrees; i++) 
@@ -44,15 +46,19 @@ namespace MachineLearning
                         bestForest.Add(tree);
                     }
                 }
-
-                this.forest.Clear();
             }
 
-            //assigns the forest with the lowest error
-            foreach (RandomTree tree in bestForest) 
+            if (bestForest.Count > 0) 
             {
-                this.forest.Add(tree);
+                this.forest.Clear();
+
+                //assigns the forest with the lowest error
+                foreach (RandomTree tree in bestForest) 
+                {
+                    this.forest.Add(tree);
+                }
             }
+            
 
             Console.WriteLine(@"Out of bag error : {0}%", forestError * 100);
             Console.WriteLine();
