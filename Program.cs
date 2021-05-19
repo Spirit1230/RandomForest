@@ -180,6 +180,59 @@ namespace MachineLearning
             
         }
 
+        static void LargeRandomTest() 
+        {
+            Console.WriteLine("Testing Random Forest With Large DataSet\n");
+
+            RandomForest rF = new RandomForest("TestData\\LargeRandomTest.csv");
+
+            Random rnd = new Random();
+
+            List<string[]> testData = new List<string[]>();
+            List<string> results = new List<string>();
+
+            for (int i = 0; i < 100; i++) 
+            {
+                double[] testEntry = new double[] { rnd.Next(0, 100), rnd.Next(0, 10), rnd.Next(0, 10), rnd.Next(0, 1) };
+
+                if (testEntry[2] > testEntry[1] && testEntry[2] * testEntry[1] / testEntry[0] < testEntry[3]) 
+                {
+                    results.Add("TRUE");
+                }
+                else 
+                {
+                    results.Add("FALSE");
+                }
+
+                string[] entrytoAdd = new string[testEntry.Length];
+
+                for (int j = 0; j < testEntry.Length; j++) 
+                {
+                    entrytoAdd[j] = testEntry[j].ToString();
+                }
+
+                testData.Add(entrytoAdd);
+            }
+
+            for (int i = 0; i < testData.Count; i++) 
+            {
+                string[] test = testData[i];
+
+                string decision = rF.GetDecision(test);
+
+                string toWrite = string.Format("Test: {0}, result is {1}", string.Join(", ", test), decision);
+
+                if (decision == results[i]) 
+                {
+                    Console.WriteLine(toWrite + ": PASSED");
+                }
+                else 
+                {
+                    Console.WriteLine(toWrite + ": FAILED");
+                }
+            }
+        }
+
         static void DataSetTest() 
         {
             Console.WriteLine("Testing DataSet Functionality\n");
