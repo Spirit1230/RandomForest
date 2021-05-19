@@ -81,7 +81,7 @@ namespace MachineLearning
             type = nodeDataSet.GetColType(col);
             condition = split;
 
-            if (nodeDataSet.GetNumCol() > 1) 
+            if (nodeDataSet.GetNumCol() - 1 > colsUsed.Length) 
             {
                 if (impurity < nodeImpurity) 
                 {
@@ -100,7 +100,7 @@ namespace MachineLearning
                     //randomly selects columns to use when splitting the next node if randomly generating a tree
                     List<int> colsToUseList = new List<int>();
                     
-                    numColsToUse = (numColsToUse + toPassColsUsed.Length >= nodeDataSet.GetNumCol() - 1) ? numColsToUse - 1 : numColsToUse;
+                    numColsToUse = (numColsToUse + toPassColsUsed.Length >= nodeDataSet.GetNumCol()) ? numColsToUse - 1 : numColsToUse;
 
                     if (numColsToUse > 0) 
                     {
@@ -149,6 +149,15 @@ namespace MachineLearning
 
                     leftNode = new Leaf(decision);
                     rightNode = new Leaf(decision);
+
+                    if (type == "double") 
+                    {
+                        condition = new string[] { "0" };
+                    }
+                    else 
+                    {
+                        condition = new string[] { "" };
+                    }
                 }  
             }
             else 
@@ -156,6 +165,15 @@ namespace MachineLearning
                 //no more columns to make decisions from
                 //adds two of the same leaf nodes effectively making the current node a leaf node
                 string decision = nodeDataSet.MostCommonColValue(nodeDataSet.GetNumCol() - 1);
+
+                if (type == "double") 
+                {
+                    condition = new string[] { "0" };
+                }
+                else 
+                {
+                    condition = new string[] { "" };
+                }
 
                 leftNode = new Leaf(decision);
                 rightNode = new Leaf(decision);

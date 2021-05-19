@@ -13,7 +13,9 @@ namespace MachineLearning
             // NumTest();
 
             // RandomTest();
-            RandomForestTest();
+            // RandomForestTest();
+
+            LargeRandomTest();
 
             // DataSetTest();
 
@@ -191,9 +193,11 @@ namespace MachineLearning
             List<string[]> testData = new List<string[]>();
             List<string> results = new List<string>();
 
+            Console.WriteLine("Test logic : RandNum3 > RandNum2 AND RandNum3 * RandNum2 / RandNum1 < RandNum4");
+
             for (int i = 0; i < 100; i++) 
             {
-                double[] testEntry = new double[] { rnd.Next(0, 100), rnd.Next(0, 10), rnd.Next(0, 10), rnd.Next(0, 1) };
+                double[] testEntry = new double[] { rnd.Next(0, 1000) / 10.0, rnd.Next(0, 1000) / 100.0, rnd.Next(0, 1000) / 100.0, rnd.Next(0, 1000) / 1000.0 };
 
                 if (testEntry[2] > testEntry[1] && testEntry[2] * testEntry[1] / testEntry[0] < testEntry[3]) 
                 {
