@@ -10,12 +10,12 @@ namespace MachineLearning
             // BinaryTest();
             // MultChoiceTest();
             // RankedTest();
-            NumTest();
+            // NumTest();
 
             // RandomTest();
             RandomForestTest();
 
-            //DataSetTest();
+            // DataSetTest();
 
             Console.ReadKey();
         }
@@ -140,7 +140,9 @@ namespace MachineLearning
             
             for (int i = 0; i < 10; i++) 
             {
-                RandomTree rT = new RandomTree(dS.CreateBootstrapedDataSet(), 0);
+                (DataSet bootStrappedDS, DataSet outOfBagDS) = dS.CreateBootstrapedDataSet();
+
+                RandomTree rT = new RandomTree(bootStrappedDS, 0);
 
                 foreach (string[] entry in testEntries) 
                 {
@@ -156,7 +158,7 @@ namespace MachineLearning
         {
             Console.WriteLine("Random Forest Test\n");
 
-            RandomForest rF = new RandomForest("TestData\\LikesFruitTest.csv", 1);
+            RandomForest rF = new RandomForest("TestData\\LikesFruitTest.csv");
 
             List<string[]> testEntries = new List<string[]>();
 
@@ -193,11 +195,13 @@ namespace MachineLearning
             }
 
             Console.WriteLine("\n");
+            Console.WriteLine("Testing Selecting Entries\n");
 
             int[] selectedEntries = dS.SelectEntries(0, "TRUE");
             Console.WriteLine(selectedEntries.Length);
 
             Console.WriteLine();
+            Console.WriteLine("Testing Cloning DataSet\n");
 
             int[] colToRemove = new int[] {};
             int[] rowToRemove = new int[] {};
@@ -206,9 +210,14 @@ namespace MachineLearning
             dS2.PrintDataSet();
 
             Console.WriteLine("\n");
+            Console.WriteLine("Testing Boot Strapping data set\n");
 
-            DataSet bootStrappedDS = dS.CreateBootstrapedDataSet();
+            (DataSet bootStrappedDS, DataSet outOfBagDS) = dS.CreateBootstrapedDataSet();
+            Console.WriteLine("Bootstrapped data :");
             bootStrappedDS.PrintDataSet();
+
+            Console.WriteLine("\nOut of Bag Data :");
+            outOfBagDS.PrintDataSet();
 
             Console.WriteLine("\n");
 

@@ -65,6 +65,11 @@ namespace MachineLearning
             return this.dataSet.Count;
         }
 
+        public string[] GetEntry(int row) 
+        {
+            return this.dataSet[row];
+        }
+
         public string[] GetHeaders() 
         {
             return this.headers;
@@ -106,19 +111,27 @@ namespace MachineLearning
             return colType;
         }
 
-        public DataSet CreateBootstrapedDataSet() 
+        public (DataSet, DataSet) CreateBootstrapedDataSet() 
         {
             //randomly takes entries from the dataset to create a new dataset
             //entries can be repeated
             Random rnd = new Random();
 
             List<string[]> bootStrapedData = new List<string[]>();
+            List<int> entryIndexUsed = new List<int>();
 
             int dataSetSize = this.dataSet.Count;
 
             for (int entryNum = 0; entryNum < dataSetSize; entryNum++) 
             {
-                string[] entryToAdd = this.dataSet[rnd.Next(0, dataSetSize)];
+                int nextIndex = rnd.Next(0, dataSetSize);
+
+                string[] entryToAdd = this.dataSet[nextIndex];
+
+                if (!entryIndexUsed.Contains(nextIndex)) 
+                {
+                    entryIndexUsed.Add(nextIndex);
+                }
 
                 string[] clonedEntry = new string[entryToAdd.Length];
 
@@ -130,9 +143,48 @@ namespace MachineLearning
                 bootStrapedData.Add(clonedEntry);
             }
 
-            (string[], bool[], List<string[]>) bootStrapedDataSet = (this.headers, this.isColNumeric, bootStrapedData);
+            DataSet bootStrapedDataSet = new DataSet((this.headers, this.isColNumeric, bootStrapedData));
+            DataSet outOfBagDataSet = new DataSet(CloneData(rowToRemove : entryIndexUsed.ToArray()));
 
-            return new DataSet(bootStrapedDataSet);
+            return (bootStrapedDataSet, outOfBagDataSet);
+        }
+
+        public int[] CompareDataSets(DataSet toCompare) 
+        {
+            //finds all the matching entries in a data set and returns their positions
+            List<int> matchingEntries = new List<int>();
+
+            for(int thisEntryIndex = 0; thisEntryIndex < this.dataSet.Count; thisEntryIndex++) 
+            {
+                string[] entry = this.dataSet[thisEntryIndex];
+
+                for (int toCompareIndex = 0; toCompareIndex < toCompare.GetNumEntries(); toCompareIndex++) 
+                {
+                    if (CompareEntries(entry, toCompare.GetEntry(toCompareIndex))) 
+                    {
+                        matchingEntries.Add(thisEntryIndex);
+                        break;
+                    }
+                }
+            }
+
+            return matchingEntries.ToArray();
+        }
+
+        private bool CompareEntries(string[] entry1, string[] entry2) 
+        {
+            bool areSame = true;
+
+            for (int index = 0; index < entry1.Length; index++) 
+            {
+                if (entry1[index] != entry2[index]) 
+                {
+                    areSame = false;
+                    break;
+                }
+            }
+
+            return areSame;
         }
 
         public (string[], bool[], List<string[]>) CloneData(int[] colToRemove = null, int[] rowToRemove = null) 
