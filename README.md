@@ -1,4 +1,7 @@
 # Random Forest
 
-A program designed to create a random forest for machine learning
-Takes data from a .csv file and uses it to create a decision tree
+A program that takes data from a .csv file to create a random forest.
+
+## .csv Layout
+~ First line of file contains headers
+~ last column contains the results for each entry
