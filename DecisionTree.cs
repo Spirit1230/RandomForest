@@ -8,6 +8,7 @@ namespace MachineLearning
     {
         protected Nodes RootNode;
         protected DataSet dataSet;
+        protected string[][][] colConditions;
 
         public string GetDecision(string[] inputData) 
         {
@@ -20,7 +21,14 @@ namespace MachineLearning
         public DecisionTree(string dataSouce) 
         {
             dataSet = new DataSet(dataSouce);
-            RootNode = new Node(dataSet, new int[0]);
+
+            colConditions = new string[this.dataSet.GetNumCol() - 1][][];
+            for (int col = 0; col < this.dataSet.GetNumCol() - 1; col++)
+            {
+                colConditions[col] = this.dataSet.GetColConditions(col);
+            }
+
+            RootNode = new Node(dataSet, new int[0], _conditions : colConditions);
         }
     }
 
@@ -29,6 +37,12 @@ namespace MachineLearning
         public RandomTree(DataSet _dataSet, int numColsUsed = 0) 
         {
             dataSet = _dataSet;
+
+            colConditions = new string[this.dataSet.GetNumCol() - 1][][];
+            for (int col = 0; col < this.dataSet.GetNumCol() - 1; col++)
+            {
+                colConditions[col] = this.dataSet.GetColConditions(col);
+            }
 
             Random rnd = new Random();
 
@@ -51,7 +65,7 @@ namespace MachineLearning
 
             int[] colsToUse = (colsToUseList.Count > 0) ? colsToUseList.ToArray() : null;
 
-            RootNode = new Node(_dataSet, new int[0], colsToUse, numColsUsed);
+            RootNode = new Node(_dataSet, new int[0], colConditions, colsToUse, numColsUsed);
         }
     }
 
@@ -69,13 +83,13 @@ namespace MachineLearning
         private string[] condition;
         private int[] colsUsed;
 
-        public Node(DataSet nodeDataSet, int[] _colsUsed, int[] _colsToUse = null, int numColsToUse = 0) 
+        public Node(DataSet nodeDataSet, int[] _colsUsed, string[][][] _conditions, int[] _colsToUse = null, int numColsToUse = 0) 
         {
             colsUsed = _colsUsed;
 
             float nodeImpurity = CalculateImpurity(nodeDataSet);
 
-            (int col, string[] split, float impurity) = FindBestSplit(nodeDataSet, _colsToUse);
+            (int col, string[] split, float impurity) = FindBestSplit(nodeDataSet,  _conditions, _colsToUse);
 
             checkCol = col;
             type = nodeDataSet.GetColType(col);
@@ -121,7 +135,7 @@ namespace MachineLearning
 
                     if (CalculateImpurity(_leftNode) != 0) 
                     {
-                        leftNode = new Node(_leftNode, toPassColsUsed, colsToUse, numColsToUse);
+                        leftNode = new Node(_leftNode, toPassColsUsed, _conditions, colsToUse, numColsToUse);
                     }
                     else 
                     {
@@ -132,7 +146,7 @@ namespace MachineLearning
 
                     if (CalculateImpurity(_rightNode) != 0) 
                     {
-                        rightNode = new Node(_rightNode, toPassColsUsed, colsToUse, numColsToUse);
+                        rightNode = new Node(_rightNode, toPassColsUsed, _conditions, colsToUse, numColsToUse);
                     }
                     else 
                     {
@@ -218,127 +232,6 @@ namespace MachineLearning
             
         }
 
-        private double[] FindAllNumericConditions(double[] allValues) 
-        {
-            //sorts each unique value and finds the midpoints between them
-            List<double> allCond = new List<double>();
-
-            Array.Sort(allValues);
-
-            for (int i = 0; i < allValues.Length - 1; i++) 
-            {
-                allCond.Add((allValues[i] + allValues[i + 1]) / 2);
-            }
-
-            return allCond.ToArray();
-        }
-
-        private string[][] FindAllCombinations(string[] allPosValues) 
-        {
-            //finds all combinations of unique values 
-            List<string[]> posConds = new List<string[]>();
-
-            //finds combinations using 1 value then 2, 3 and so on till it reaches maxNumConds
-            int maxNumConds = allPosValues.Length - 1;
-            int currentMaxConds = 1;
-            
-            //position to take values from allPosValues
-            int startPos = 0;
-            int posIndex = startPos;
-
-            //records how many possible combinations of a certain length can be found
-            int numFound = 0;
-            int totalComb = CalculateTotalCombinations(currentMaxConds, allPosValues.Length);
-
-            List<string> posCond = new List<string>();
-
-            while (currentMaxConds <= maxNumConds) 
-            {
-                //iteratest through all values to find different combinations
-                string nextValue = allPosValues[posIndex++];
-
-                if (posCond.Count < currentMaxConds && !posCond.Contains(nextValue)) 
-                {
-                    posCond.Add(nextValue);
-                }
-                else 
-                {
-                    //removes values till a start position is found in allPosValues that can fill posCond
-                    string valToRemove;
-                    int posInAllValues;
-
-                    do 
-                    {
-                        valToRemove = posCond[posCond.Count - 1];
-
-                        posInAllValues = 0;
-
-                        for (int i = 0; i < allPosValues.Length; i++) 
-                        {
-                            if (valToRemove == allPosValues[i]) 
-                            {
-                                posInAllValues = i;
-                                break;
-                            }
-                        }
-
-                        startPos = posInAllValues + 1;
-                        posCond.Remove(valToRemove);
-
-                    } while (allPosValues.Length - startPos < currentMaxConds - posCond.Count);
-
-                    posIndex = startPos;
-                }
-
-                if (posCond.Count == currentMaxConds)
-                {
-                    //found a combination of conditions with the required length
-                    posConds.Add(posCond.ToArray());
-                    posCond.RemoveAt(posCond.Count - 1);    //removes final condition to prepare for next combination
-                    numFound++;
-                }
-
-                if (posIndex >= allPosValues.Length) 
-                {
-                    //reached end of allPosValues array so loops back to specified start position
-                    posIndex = startPos;
-                }
-
-                if (numFound == totalComb) 
-                {
-                    //all possible conditions of the required lenght have been found so resets to find the next set
-                    numFound = 0;
-                    totalComb = CalculateTotalCombinations(++currentMaxConds, allPosValues.Length);
-                    startPos = 0;
-                    posIndex = startPos;
-                    posCond.Clear();
-                }
-            }
-
-            return posConds.ToArray();
-        }
-
-        private int CalculateTotalCombinations(int numChosen, int totalOptions) 
-        {
-            //total combinations without repition = n!/(r!(n-r)!)
-            int numComb = CalcFactorial(totalOptions) / (CalcFactorial(numChosen) * CalcFactorial(totalOptions - numChosen));
-
-            return numComb;
-        }
-
-        private int CalcFactorial(int n) 
-        {
-            //calculates the factorial eg: 5! = 5 * 4 * 3 * 2 * 1
-            int result = 1;
-
-            for (int i = 1; i <= n; i++) 
-            {
-                result *= i;
-            }
-
-            return result;
-        }
-
         private (DataSet, DataSet) SeperateData(int col, DataSet dataSet, string[] conditionToSeperate) 
         {
             //finds all entries that meet the specified conditions
@@ -372,7 +265,7 @@ namespace MachineLearning
             return (trueData, falseData);
         }
 
-        private (int, string[], float) FindBestSplit(DataSet dataSet, int[] colsToUse = null) 
+        private (int, string[], float) FindBestSplit(DataSet dataSet, string[][][] conditions, int[] colsToUse = null) 
         {
             //finds best way to split a data set to find lowest impurity
 
@@ -404,32 +297,8 @@ namespace MachineLearning
             foreach (int col in cols) 
             {
                 string[][] toCheck;
-                string[] uniqueVals = dataSet.GetColValues(col);
 
-                if (dataSet.GetColType(col) == "double") 
-                {
-                    //handles numeric data
-                    double[] allNums = new double[uniqueVals.Length];
-
-                    for (int i = 0; i < uniqueVals.Length; i++) 
-                    {
-                        allNums[i] = Convert.ToDouble(uniqueVals[i]);
-                    }
-
-                    double[] allCond = FindAllNumericConditions(allNums);
-
-                    //all data handled as strings so numeric conditions converted back
-                    toCheck = new string[allCond.Length][];
-
-                    for (int i = 0; i < toCheck.Length; i++) 
-                    {
-                        toCheck[i] = new string[] { Convert.ToString(allCond[i]) };
-                    }
-                } 
-                else 
-                {
-                    toCheck = FindAllCombinations(uniqueVals);
-                }
+                toCheck = conditions[col];
 
                 foreach (string[] comb in toCheck) 
                 {

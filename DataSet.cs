@@ -11,6 +11,7 @@ namespace MachineLearning
         string[] headers = null;
         bool[] isColNumeric = null;
         List<string[]> dataSet = new List<string[]>();
+        string[][][] colConditions;
 
         public DataSet(string dataSouce) 
         {
@@ -44,15 +45,22 @@ namespace MachineLearning
             {
                 Console.WriteLine("File does not exist");
             }
+
+            colConditions = new string[this.headers.Length - 1][][];
+            for (int col = 0; col < this.headers.Length - 1; col++)
+            {
+                colConditions[col] = DetermineConditions(col);
+            }
         }
 
-        public DataSet((string[] _headers, bool[] _isColNumeric, List<string[]> data) dataSource) 
+        public DataSet((string[] _headers, bool[] _isColNumeric, string[][][] _colConditions, List<string[]> data) dataSource) 
         {
             //takes a tuple of data and headers and appropriatly assigns them
             //this is the output from the CloneData() function
             headers = dataSource._headers;
             isColNumeric = dataSource._isColNumeric;
             dataSet = dataSource.data;
+            colConditions = dataSource._colConditions;
         }
 
         public int GetNumCol() 
@@ -111,6 +119,11 @@ namespace MachineLearning
             return colType;
         }
 
+        public string[][] GetColConditions(int col) 
+        {
+            return colConditions[col];
+        }
+
         public (DataSet, DataSet) CreateBootstrapedDataSet() 
         {
             //randomly takes entries from the dataset to create a new dataset
@@ -143,7 +156,7 @@ namespace MachineLearning
                 bootStrapedData.Add(clonedEntry);
             }
 
-            DataSet bootStrapedDataSet = new DataSet((this.headers, this.isColNumeric, bootStrapedData));
+            DataSet bootStrapedDataSet = new DataSet((this.headers, this.isColNumeric, this.colConditions, bootStrapedData));
             DataSet outOfBagDataSet = new DataSet(CloneData(rowToRemove : entryIndexUsed.ToArray()));
 
             return (bootStrapedDataSet, outOfBagDataSet);
@@ -187,7 +200,7 @@ namespace MachineLearning
             return areSame;
         }
 
-        public (string[], bool[], List<string[]>) CloneData(int[] colToRemove = null, int[] rowToRemove = null) 
+        public (string[], bool[], string[][][], List<string[]>) CloneData(int[] colToRemove = null, int[] rowToRemove = null) 
         {
             //clones the data whilst removing any specifed entries and/or columns
 
@@ -238,7 +251,32 @@ namespace MachineLearning
                 }                
             }
 
-            return (clonedHeaders.ToArray(), clonedColType.ToArray(), clonedData);
+            //clones the conditions removing the conditions for any specified columns
+            List<string[][]> clonedCondtions = new List<string[][]>();
+
+            for (int col = 0; col < this.colConditions.Length; col++) 
+            {
+                if (!colToRemove.Contains(col)) 
+                {
+                    string[][] allCond = new string[this.colConditions[col].Length][];
+
+                    for (int j = 0; j < allCond.Length; j++) 
+                    {
+                        string[] cond = new string[this.colConditions[col][j].Length];
+
+                        for (int k = 0; k < cond.Length; k++)
+                        {
+                            cond[k] = this.colConditions[col][j][k];
+                        }
+
+                        allCond[j] = cond;
+                    }
+
+                    clonedCondtions.Add(allCond);
+                }
+            }
+
+            return (clonedHeaders.ToArray(), clonedColType.ToArray(), clonedCondtions.ToArray(), clonedData);
         }
 
         public int[] SelectEntries(int checkCol, string entryCheck) 
@@ -358,6 +396,162 @@ namespace MachineLearning
             }
 
             return isNumeric;
+        }
+
+        private string[][] DetermineConditions(int col) 
+        {
+            string[][] colConditions;
+
+            //determines all the unique conditions to use when evaluating each column
+            string[] uniqueVals = this.GetColValues(col);
+
+            if (this.GetColType(col) == "double") 
+            {
+                //handles numeric data
+                double[] allNums = new double[uniqueVals.Length];
+
+                for (int i = 0; i < uniqueVals.Length; i++) 
+                {
+                    allNums[i] = Convert.ToDouble(uniqueVals[i]);
+                }
+
+                double[] allCond = FindAllNumericConditions(allNums);
+
+                //all data handled as strings so numeric conditions converted back
+                colConditions = new string[allCond.Length][];
+
+                for (int i = 0; i < colConditions.Length; i++) 
+                {
+                    colConditions[i] = new string[] { Convert.ToString(allCond[i]) };
+                }
+            } 
+            else 
+            {
+                colConditions = FindAllCombinations(uniqueVals);
+            }
+
+            return colConditions;
+        }
+
+        private double[] FindAllNumericConditions(double[] allValues) 
+        {
+            //sorts each unique value and finds the midpoints between them
+            List<double> allCond = new List<double>();
+
+            Array.Sort(allValues);
+
+            for (int i = 0; i < allValues.Length - 1; i++) 
+            {
+                allCond.Add((allValues[i] + allValues[i + 1]) / 2);
+            }
+
+            return allCond.ToArray();
+        }
+
+        private string[][] FindAllCombinations(string[] allPosValues) 
+        {
+            //finds all combinations of unique values 
+            List<string[]> posConds = new List<string[]>();
+
+            //finds combinations using 1 value then 2, 3 and so on till it reaches maxNumConds
+            int maxNumConds = allPosValues.Length - 1;
+            int currentMaxConds = 1;
+            
+            //position to take values from allPosValues
+            int startPos = 0;
+            int posIndex = startPos;
+
+            //records how many possible combinations of a certain length can be found
+            int numFound = 0;
+            int totalComb = CalculateTotalCombinations(currentMaxConds, allPosValues.Length);
+
+            List<string> posCond = new List<string>();
+
+            while (currentMaxConds <= maxNumConds) 
+            {
+                //iteratest through all values to find different combinations
+                string nextValue = allPosValues[posIndex++];
+
+                if (posCond.Count < currentMaxConds && !posCond.Contains(nextValue)) 
+                {
+                    posCond.Add(nextValue);
+                }
+                else 
+                {
+                    //removes values till a start position is found in allPosValues that can fill posCond
+                    string valToRemove;
+                    int posInAllValues;
+
+                    do 
+                    {
+                        valToRemove = posCond[posCond.Count - 1];
+
+                        posInAllValues = 0;
+
+                        for (int i = 0; i < allPosValues.Length; i++) 
+                        {
+                            if (valToRemove == allPosValues[i]) 
+                            {
+                                posInAllValues = i;
+                                break;
+                            }
+                        }
+
+                        startPos = posInAllValues + 1;
+                        posCond.Remove(valToRemove);
+
+                    } while (allPosValues.Length - startPos < currentMaxConds - posCond.Count);
+
+                    posIndex = startPos;
+                }
+
+                if (posCond.Count == currentMaxConds)
+                {
+                    //found a combination of conditions with the required length
+                    posConds.Add(posCond.ToArray());
+                    posCond.RemoveAt(posCond.Count - 1);    //removes final condition to prepare for next combination
+                    numFound++;
+                }
+
+                if (posIndex >= allPosValues.Length) 
+                {
+                    //reached end of allPosValues array so loops back to specified start position
+                    posIndex = startPos;
+                }
+
+                if (numFound == totalComb) 
+                {
+                    //all possible conditions of the required lenght have been found so resets to find the next set
+                    numFound = 0;
+                    totalComb = CalculateTotalCombinations(++currentMaxConds, allPosValues.Length);
+                    startPos = 0;
+                    posIndex = startPos;
+                    posCond.Clear();
+                }
+            }
+
+            return posConds.ToArray();
+        }
+
+        private int CalculateTotalCombinations(int numChosen, int totalOptions) 
+        {
+            //total combinations without repition = n!/(r!(n-r)!)
+            int numComb = CalcFactorial(totalOptions) / (CalcFactorial(numChosen) * CalcFactorial(totalOptions - numChosen));
+
+            return numComb;
+        }
+
+        private int CalcFactorial(int n) 
+        {
+            //calculates the factorial eg: 5! = 5 * 4 * 3 * 2 * 1
+            int result = 1;
+
+            for (int i = 1; i <= n; i++) 
+            {
+                result *= i;
+            }
+
+            return result;
         }
     }
 }
