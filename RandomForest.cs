@@ -141,7 +141,7 @@ namespace MachineLearning
                 }
 
                 //calculates error
-                outOfBagError = (double)numCorrect / (double)outOfBagData.Count;
+                outOfBagError = 1.0 - (double)numCorrect / (double)outOfBagData.Count;
             }
 
             return outOfBagError;
