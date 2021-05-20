@@ -193,7 +193,7 @@ namespace MachineLearning
             List<string[]> testData = new List<string[]>();
             List<string> results = new List<string>();
 
-            Console.WriteLine("Test logic : RandNum3 > RandNum2 AND RandNum3 * RandNum2 / RandNum1 < RandNum4");
+            Console.WriteLine("Test logic : RandNum3 > RandNum2 AND RandNum3 * RandNum2 / RandNum1 < RandNum4\n");
 
             for (int i = 0; i < 100; i++) 
             {
@@ -218,6 +218,8 @@ namespace MachineLearning
                 testData.Add(entrytoAdd);
             }
 
+            int numCorrect = 0;
+
             for (int i = 0; i < testData.Count; i++) 
             {
                 string[] test = testData[i];
@@ -229,12 +231,17 @@ namespace MachineLearning
                 if (decision == results[i]) 
                 {
                     Console.WriteLine(toWrite + ": PASSED");
+                    numCorrect++;
                 }
                 else 
                 {
                     Console.WriteLine(toWrite + ": FAILED");
                 }
             }
+
+            Console.WriteLine();
+            Console.WriteLine(@"Error in test : {0}%", (1.0 - (double)numCorrect / (double)testData.Count) * 100);
+            Console.WriteLine();
         }
 
         static void DataSetTest() 

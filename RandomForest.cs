@@ -12,7 +12,7 @@ namespace MachineLearning
         {
             DataSet dataSet = new DataSet(dataSource);
 
-            const int numTrees = 10;
+            const int numTrees = 5;
 
             List<RandomTree> bestForest = new List<RandomTree>();
             double bestForestError = 1.0;
